@@ -2,6 +2,7 @@ package com.bidly.auction.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -31,5 +32,12 @@ public class GlobalExceptionHandler {
         Map<String, String> body = new HashMap<>();
         body.put("error", message);
         return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, String>> handleOptimisticLocking(ObjectOptimisticLockingFailureException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", "Concurrent update detected. Please retry your request.");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 }

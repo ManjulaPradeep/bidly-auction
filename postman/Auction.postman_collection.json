@@ -1,0 +1,184 @@
+{
+  "info": {
+    "_postman_id": "0c5f734e-9f65-4b00-9d5e-70fe04ea2e25",
+    "name": "Auction API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Signup Bidder",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Bidder One\",\n  \"email\": \"{{bidderEmail}}\",\n  \"password\": \"secret123\",\n  \"role\": \"BIDDER\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "signup"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Auth - Signup Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Admin One\",\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"secret123\",\n  \"role\": \"ADMIN\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "signup"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Item - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-User-Email",
+            "value": "{{adminEmail}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Vintage Clock\",\n  \"description\": \"Charity donation\",\n  \"startingPrice\": 100.00,\n  \"auctionEndTime\": \"2026-12-31T18:00:00\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/items",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "items"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Item - List Active",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Email",
+            "value": "{{bidderEmail}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/items",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "items"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Item - Get By Id",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Email",
+            "value": "{{bidderEmail}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/items/{{itemId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "items",
+            "{{itemId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Bid - Place Bid",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-User-Email",
+            "value": "{{bidderEmail}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"bidAmount\": 120.00\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/items/{{itemId}}/bids",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "items",
+            "{{itemId}}",
+            "bids"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin1@example.com"
+    },
+    {
+      "key": "bidderEmail",
+      "value": "bidder1@example.com"
+    },
+    {
+      "key": "itemId",
+      "value": "1"
+    }
+  ]
+}
