@@ -15,6 +15,7 @@ Implemented so far:
 - Spring Web
 - Spring Data JPA (Hibernate)
 - Spring Validation
+- Spring WebSocket (STOMP)
 - Spring Security (basic setup)
 - MySQL
 - Springdoc OpenAPI (Swagger UI)
@@ -154,6 +155,17 @@ Real-system options (if traffic is very high):
 - Bounded retries with backoff
 - Pessimistic locking (`SELECT ... FOR UPDATE`)
 - Queue/event-driven per-item bid serialization
+
+### Real-time Updates (WebSockets)
+The application uses Spring WebSockets with STOMP to notify clients about new bids in real-time.
+
+- **Endpoint**: `/ws` (supports SockJS)
+- **Subscription Topic**: `/topic/items/{itemId}`
+
+**How it works:**
+1. A client connects to the WebSocket endpoint.
+2. The client subscribes to the topic for a specific item (e.g., `/topic/items/1`).
+3. When a valid bid is placed via the REST API (`POST /items/1/bids`), the server broadcasts the new bid details to all subscribers of that topic.
 
 ---
 
