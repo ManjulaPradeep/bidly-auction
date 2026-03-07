@@ -71,11 +71,13 @@ public class ItemService {
         return ItemResponse.from(item);
     }
 
-    private void closeExpiredAuctions() {
-        List<Item> expiredItems = itemRepository.findByStatusAndAuctionEndTimeBefore(ItemStatus.ACTIVE, LocalDateTime.now());
+    @Transactional
+    public int closeExpiredAuctions() {
+        List<Item> expiredItems = itemRepository.findByStatusAndAuctionEndTimeLessThanEqual(ItemStatus.ACTIVE, LocalDateTime.now());
         for (Item item : expiredItems) {
             item.setStatus(ItemStatus.CLOSED);
         }
+        return expiredItems.size();
     }
 
     private void requireRole(User user, String... acceptedRoles) {
