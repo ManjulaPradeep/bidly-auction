@@ -1,7 +1,10 @@
 package com.bidly.auction.controller;
 
 import com.bidly.auction.dto.CreateItemRequest;
+import com.bidly.auction.dto.BidResponse;
 import com.bidly.auction.dto.ItemResponse;
+import com.bidly.auction.dto.PlaceBidRequest;
+import com.bidly.auction.service.BidService;
 import com.bidly.auction.service.ItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,9 +25,11 @@ import java.util.List;
 public class ItemController {
 
     private final ItemService itemService;
+    private final BidService bidService;
 
-    public ItemController(ItemService itemService) {
+    public ItemController(ItemService itemService, BidService bidService) {
         this.itemService = itemService;
+        this.bidService = bidService;
     }
 
     @PostMapping
@@ -51,5 +56,15 @@ public class ItemController {
             @RequestHeader(name = "X-User-Email", required = false) String requesterEmail
     ) {
         return itemService.getItem(itemId, requesterEmail);
+    }
+
+    @PostMapping("/{itemId}/bids")
+    @Operation(summary = "Place a bid for an item (BIDDER only)")
+    public BidResponse placeBid(
+            @PathVariable Long itemId,
+            @Valid @RequestBody PlaceBidRequest request,
+            @RequestHeader(name = "X-User-Email", required = false) String requesterEmail
+    ) {
+        return bidService.placeBid(itemId, request, requesterEmail);
     }
 }
