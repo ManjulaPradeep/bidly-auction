@@ -84,7 +84,7 @@ Schema creation:
 
 Controllers:
 - `AuthController`: signup/login
-- `ItemController`: create item, list items, get item, place bid
+- `ItemController`: create item, list items, search items, get item, place bid, get winner
 
 Services:
 - `AuthService`: user signup/login logic
@@ -164,9 +164,26 @@ OpenAPI JSON:
 - `POST /api/auth/signup`
 - `POST /api/auth/login`
 - `POST /items` (ADMIN)
-- `GET /items` (BIDDER/ADMIN)
+- `GET /items` (BIDDER/ADMIN, active items only)
+- `GET /items/search` (BIDDER/ADMIN, filtered search)
 - `GET /items/{itemId}` (BIDDER/ADMIN)
 - `POST /items/{itemId}/bids` (BIDDER)
+- `GET /items/{itemId}/winner` (BIDDER/ADMIN)
+
+### Search/Filter Endpoint
+
+`GET /items/search` supports query parameters:
+- `keyword` (search in title/description)
+- `status` (`ACTIVE` or `CLOSED`)
+- `minStartingPrice`
+- `maxStartingPrice`
+- `auctionEndAfter` (ISO datetime, e.g. `2026-03-01T00:00:00`)
+- `auctionEndBefore` (ISO datetime)
+
+Rules:
+- If `status` is not provided, default is `ACTIVE`
+- `minStartingPrice` must be `<= maxStartingPrice`
+- `auctionEndAfter` must be `<= auctionEndBefore`
 
 ## Curl Examples
 
@@ -198,6 +215,12 @@ curl -X GET http://localhost:8080/items \
   -H "X-User-Email: bidder1@example.com"
 ```
 
+Search items:
+```bash
+curl -X GET "http://localhost:8080/items/search?keyword=clock&status=ACTIVE&minStartingPrice=50&maxStartingPrice=500&auctionEndBefore=2026-12-31T23:59:59" \
+  -H "X-User-Email: bidder1@example.com"
+```
+
 Get item by id:
 ```bash
 curl -X GET http://localhost:8080/items/1 \
@@ -210,6 +233,12 @@ curl -X POST http://localhost:8080/items/1/bids \
   -H "Content-Type: application/json" \
   -H "X-User-Email: bidder1@example.com" \
   -d "{\"bidAmount\":120.00}"
+```
+
+Get winner for closed auction:
+```bash
+curl -X GET http://localhost:8080/items/1/winner \
+  -H "X-User-Email: bidder1@example.com"
 ```
 
 ## Postman Collection
