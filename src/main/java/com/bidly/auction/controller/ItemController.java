@@ -4,6 +4,7 @@ import com.bidly.auction.dto.CreateItemRequest;
 import com.bidly.auction.dto.BidResponse;
 import com.bidly.auction.dto.ItemResponse;
 import com.bidly.auction.dto.PlaceBidRequest;
+import com.bidly.auction.dto.WinnerResponse;
 import com.bidly.auction.service.BidService;
 import com.bidly.auction.service.ItemService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,5 +67,14 @@ public class ItemController {
             @RequestHeader(name = "X-User-Email", required = false) String requesterEmail
     ) {
         return bidService.placeBid(itemId, request, requesterEmail);
+    }
+
+    @GetMapping("/{itemId}/winner")
+    @Operation(summary = "Get winner details for a closed auction item")
+    public WinnerResponse getWinner(
+            @PathVariable Long itemId,
+            @RequestHeader(name = "X-User-Email", required = false) String requesterEmail
+    ) {
+        return itemService.getWinner(itemId, requesterEmail);
     }
 }

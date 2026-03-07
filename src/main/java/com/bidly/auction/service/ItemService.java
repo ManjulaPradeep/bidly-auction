@@ -5,6 +5,8 @@ import com.bidly.auction.domain.ItemStatus;
 import com.bidly.auction.domain.User;
 import com.bidly.auction.dto.CreateItemRequest;
 import com.bidly.auction.dto.ItemResponse;
+import com.bidly.auction.dto.WinnerResponse;
+import com.bidly.auction.repository.BidRepository;
 import com.bidly.auction.repository.ItemRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -19,10 +21,12 @@ import java.util.List;
 public class ItemService {
 
     private final ItemRepository itemRepository;
+    private final BidRepository bidRepository;
     private final CurrentUserService currentUserService;
 
-    public ItemService(ItemRepository itemRepository, CurrentUserService currentUserService) {
+    public ItemService(ItemRepository itemRepository, BidRepository bidRepository, CurrentUserService currentUserService) {
         this.itemRepository = itemRepository;
+        this.bidRepository = bidRepository;
         this.currentUserService = currentUserService;
     }
 
@@ -64,11 +68,30 @@ public class ItemService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
 
-        if (item.getStatus() == ItemStatus.ACTIVE && item.getAuctionEndTime().isBefore(LocalDateTime.now())) {
-            item.setStatus(ItemStatus.CLOSED);
-        }
+        closeIfExpired(item);
 
         return ItemResponse.from(item);
+    }
+
+    @Transactional
+    public WinnerResponse getWinner(Long itemId, String requesterEmail) {
+        User requester = currentUserService.requireUser(requesterEmail);
+        requireRole(requester, "BIDDER", "ADMIN");
+
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
+
+        closeIfExpired(item);
+
+        if (item.getStatus() != ItemStatus.CLOSED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Auction is still active");
+        }
+
+        var winnerBid = bidRepository.findTopByItemIdOrderByBidAmountDescCreatedAtAscIdAsc(itemId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No winning bid for this item"));
+
+        item.setWinnerBidId(winnerBid.getId());
+        return WinnerResponse.from(itemId, winnerBid);
     }
 
     @Transactional
@@ -78,6 +101,12 @@ public class ItemService {
             item.setStatus(ItemStatus.CLOSED);
         }
         return expiredItems.size();
+    }
+
+    private void closeIfExpired(Item item) {
+        if (item.getStatus() == ItemStatus.ACTIVE && !item.getAuctionEndTime().isAfter(LocalDateTime.now())) {
+            item.setStatus(ItemStatus.CLOSED);
+        }
     }
 
     private void requireRole(User user, String... acceptedRoles) {
