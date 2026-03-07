@@ -12,6 +12,10 @@ import com.bidly.auction.service.ItemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @RequestMapping("/items")
@@ -49,21 +52,29 @@ public class ItemController {
 
     @GetMapping
     @Operation(summary = "List active auction items (BIDDER/ADMIN)")
-    public List<ItemResponse> listActiveItems(
+    public Page<ItemResponse> listActiveItems(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "auctionEndTime") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir,
             @RequestHeader(name = "X-User-Email", required = false) String requesterEmail
     ) {
-        return itemService.listActiveItems(requesterEmail);
+        return itemService.listActiveItems(requesterEmail, buildPageable(page, size, sortBy, sortDir));
     }
 
     @GetMapping("/search")
     @Operation(summary = "Search/filter auction items (BIDDER/ADMIN)")
-    public List<ItemResponse> searchItems(
+    public Page<ItemResponse> searchItems(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ItemStatus status,
             @RequestParam(required = false) BigDecimal minStartingPrice,
             @RequestParam(required = false) BigDecimal maxStartingPrice,
             @RequestParam(required = false) LocalDateTime auctionEndAfter,
             @RequestParam(required = false) LocalDateTime auctionEndBefore,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "auctionEndTime") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir,
             @RequestHeader(name = "X-User-Email", required = false) String requesterEmail
     ) {
         ItemSearchFilter filter = new ItemSearchFilter(
@@ -74,7 +85,7 @@ public class ItemController {
                 auctionEndAfter,
                 auctionEndBefore
         );
-        return itemService.listItems(filter, requesterEmail);
+        return itemService.listItems(filter, requesterEmail, buildPageable(page, size, sortBy, sortDir));
     }
 
     @GetMapping("/{itemId}")
@@ -103,5 +114,13 @@ public class ItemController {
             @RequestHeader(name = "X-User-Email", required = false) String requesterEmail
     ) {
         return itemService.getWinner(itemId, requesterEmail);
+    }
+
+    private Pageable buildPageable(int page, int size, String sortBy, String sortDir) {
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        String safeSortBy = (sortBy == null || sortBy.isBlank()) ? "auctionEndTime" : sortBy.trim();
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(1, Math.min(size, 100));
+        return PageRequest.of(safePage, safeSize, Sort.by(direction, safeSortBy));
     }
 }
