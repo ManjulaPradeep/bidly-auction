@@ -20,6 +20,8 @@ Implemented so far:
 - Springdoc OpenAPI (Swagger UI)
 - Maven
 
+---
+
 ## Build And Run
 
 1. Clone repository and go to project:
@@ -36,7 +38,7 @@ cd auction
 
 3. Run application:
 ```bash
-mvn spring-boot:run
+mvn spring-boot\:run
 ```
 
 4. Run tests:
@@ -44,7 +46,12 @@ mvn spring-boot:run
 mvn test
 ```
 
+---
+
 ## MySQL Setup
+
+### Option 1: Automatic Setup (Recommended)
+Spring Boot will **automatically run migrations** when the project starts, if Flyway is enabled (`FLYWAY_ENABLED=true`).
 
 Default DB config from `application.properties`:
 - URL: `jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:bidly_auction}`
@@ -72,6 +79,24 @@ Schema creation:
 - Flyway scripts are available in `src/main/resources/db/migration`.
 - Enable Flyway with `FLYWAY_ENABLED=true` if you want migration-based schema initialization.
 
+### Option 2: Manual Import (For phpMyAdmin/MySQL Server)
+If you cannot create the database manually, you can import the provided `.sql` dump file:
+
+1. **Download the dump file:**
+   - [`sql/bidly_auction_database.sql`](sql/bidly_auction_database.sql)
+
+2. **Import using phpMyAdmin:**
+   - Open phpMyAdmin and select your database.
+   - Go to the **Import** tab.
+   - Choose the `bidly_auction_database.sql` file and click **Go**.
+
+3. **Import using MySQL Command Line:**
+   ```bash
+   mysql -u [username] -p[password] bidly_auction < sql/bidly_auction_database.sql
+   ```
+
+---
+
 ## Default Seed Data
 
 - Roles seeded by migration: `ADMIN`, `BIDDER`
@@ -79,6 +104,8 @@ Schema creation:
   - Email: `admin@bidly.com`
   - Password: `admin123`
   - Role: `ADMIN`
+
+---
 
 ## Architecture / Key Components
 
@@ -98,6 +125,8 @@ Repositories:
 
 Entities:
 - `User`, `Role`, `Item`, `Bid`
+
+---
 
 ## Core Logic (Assignment)
 
@@ -126,11 +155,15 @@ Real-system options (if traffic is very high):
 - Pessimistic locking (`SELECT ... FOR UPDATE`)
 - Queue/event-driven per-item bid serialization
 
+---
+
 ## Data Persistence
 - Uses Spring Data JPA + MySQL
 - Item and bid data are persisted in tables:
   - `items`
   - `bids`
+
+---
 
 ## Error Handling And Validation
 - Global exception handling via `GlobalExceptionHandler`
@@ -139,6 +172,8 @@ Real-system options (if traffic is very high):
   - `MethodArgumentNotValidException` (request validation errors)
   - `ObjectOptimisticLockingFailureException` (`409 CONFLICT`)
 - Request payloads validated with Spring Validation annotations (`@Valid`, `@NotBlank`, `@NotNull`, `@Future`, `@DecimalMin`, etc.)
+
+---
 
 ## Authentication / Authorization Model (Current Simple Approach)
 - Auth endpoints are open:
@@ -150,6 +185,8 @@ Real-system options (if traffic is very high):
   - Create item: `ADMIN` only
   - List/get items: `BIDDER` or `ADMIN`
   - Place bid: `BIDDER` only
+
+---
 
 ## API Documentation
 
@@ -184,6 +221,8 @@ Rules:
 - If `status` is not provided, default is `ACTIVE`
 - `minStartingPrice` must be `<= maxStartingPrice`
 - `auctionEndAfter` must be `<= auctionEndBefore`
+
+---
 
 ## Curl Examples
 
@@ -240,6 +279,8 @@ Get winner for closed auction:
 curl -X GET http://localhost:8080/items/1/winner \
   -H "X-User-Email: bidder1@example.com"
 ```
+
+---
 
 ## Postman Collection
 
