@@ -24,7 +24,7 @@ Implemented so far:
 
 1. Clone repository and go to project:
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/ManjulaPradeep/bidly-auction.git
 cd auction
 ```
 
