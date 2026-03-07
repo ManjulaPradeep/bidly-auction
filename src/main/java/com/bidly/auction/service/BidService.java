@@ -1,5 +1,15 @@
 package com.bidly.auction.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.bidly.auction.domain.Bid;
 import com.bidly.auction.domain.Item;
 import com.bidly.auction.domain.ItemStatus;
@@ -8,14 +18,7 @@ import com.bidly.auction.dto.BidResponse;
 import com.bidly.auction.dto.PlaceBidRequest;
 import com.bidly.auction.repository.BidRepository;
 import com.bidly.auction.repository.ItemRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 
 @Service
 public class BidService {
@@ -23,11 +26,13 @@ public class BidService {
     private final BidRepository bidRepository;
     private final ItemRepository itemRepository;
     private final CurrentUserService currentUserService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public BidService(BidRepository bidRepository, ItemRepository itemRepository, CurrentUserService currentUserService) {
+    public BidService(BidRepository bidRepository, ItemRepository itemRepository, CurrentUserService currentUserService, SimpMessagingTemplate messagingTemplate) {
         this.bidRepository = bidRepository;
         this.itemRepository = itemRepository;
         this.currentUserService = currentUserService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Transactional
@@ -62,7 +67,10 @@ public class BidService {
         item.setCurrentHighestBid(request.bidAmount());
 
         Bid savedBid = bidRepository.save(bid);
-        return BidResponse.from(savedBid, item.getCurrentHighestBid());
+        BidResponse response = BidResponse.from(savedBid, item.getCurrentHighestBid());
+
+        messagingTemplate.convertAndSend("/topic/items/" + itemId, response);
+        return response;
     }
 
     private void requireRole(User user, String... acceptedRoles) {
