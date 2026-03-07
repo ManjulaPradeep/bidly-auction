@@ -5,14 +5,19 @@ import com.bidly.auction.domain.ItemStatus;
 import com.bidly.auction.domain.User;
 import com.bidly.auction.dto.CreateItemRequest;
 import com.bidly.auction.dto.ItemResponse;
+import com.bidly.auction.dto.ItemSearchFilter;
 import com.bidly.auction.dto.WinnerResponse;
 import com.bidly.auction.repository.BidRepository;
 import com.bidly.auction.repository.ItemRepository;
+import com.bidly.auction.repository.ItemSpecifications;
 import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -49,12 +54,29 @@ public class ItemService {
 
     @Transactional
     public List<ItemResponse> listActiveItems(String requesterEmail) {
+        return listItems(new ItemSearchFilter(null, ItemStatus.ACTIVE, null, null, null, null), requesterEmail);
+    }
+
+    @Transactional
+    public List<ItemResponse> listItems(ItemSearchFilter filter, String requesterEmail) {
         User requester = currentUserService.requireUser(requesterEmail);
         requireRole(requester, "BIDDER", "ADMIN");
 
         closeExpiredAuctions();
 
-        return itemRepository.findByStatusAndAuctionEndTimeAfterOrderByAuctionEndTimeAsc(ItemStatus.ACTIVE, LocalDateTime.now())
+        validateRange(filter.minStartingPrice(), filter.maxStartingPrice(), "startingPrice");
+        validateDateRange(filter.auctionEndAfter(), filter.auctionEndBefore(), "auctionEndTime");
+
+        ItemStatus status = filter.status() == null ? ItemStatus.ACTIVE : filter.status();
+        Specification<Item> spec = Specification
+                .where(ItemSpecifications.hasStatus(status))
+                .and(ItemSpecifications.keywordInTitleOrDescription(filter.keyword()))
+                .and(ItemSpecifications.startingPriceGte(filter.minStartingPrice()))
+                .and(ItemSpecifications.startingPriceLte(filter.maxStartingPrice()))
+                .and(ItemSpecifications.auctionEndAfter(filter.auctionEndAfter()))
+                .and(ItemSpecifications.auctionEndBefore(filter.auctionEndBefore()));
+
+        return itemRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "auctionEndTime"))
                 .stream()
                 .map(ItemResponse::from)
                 .toList();
@@ -106,6 +128,18 @@ public class ItemService {
     private void closeIfExpired(Item item) {
         if (item.getStatus() == ItemStatus.ACTIVE && !item.getAuctionEndTime().isAfter(LocalDateTime.now())) {
             item.setStatus(ItemStatus.CLOSED);
+        }
+    }
+
+    private void validateRange(BigDecimal min, BigDecimal max, String field) {
+        if (min != null && max != null && min.compareTo(max) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " min must be <= max");
+        }
+    }
+
+    private void validateDateRange(LocalDateTime after, LocalDateTime before, String field) {
+        if (after != null && before != null && after.isAfter(before)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " after must be <= before");
         }
     }
 
